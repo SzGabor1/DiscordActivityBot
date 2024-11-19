@@ -1,0 +1,4 @@
+*.png
+Dockerfile
+docker-compose.yaml
+__pycache__
