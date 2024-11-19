@@ -20,17 +20,6 @@ WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 sessions = {}
 rep = Reports()
 
-def update_user_time(member,time):
-
-    if user_activity.get(member.name,None) is None:
-        user_activity[member.name] = 0
-        
-    
-    
-    user_activity[member.name] += time
-    print(user_activity)
-    with open("activity.json","w",encoding = "utf8") as f:
-        f.write(json.dumps(user_activity))
 
 def send_webhook_message(content):
     data = {"content": content}
@@ -106,6 +95,11 @@ async def alltime(ctx,*args):
     
     await ctx.send(message)
 
+@bot.event
+async def on_member_update(before, after):
+    #gombnyomas elotti allapot
+    before.voice.mute
+    pass
 
 
 @bot.event
