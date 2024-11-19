@@ -7,8 +7,19 @@ class Reports:
         self.mongo = MongoInit()
     
     
-    def makeReport(self, server_id, day):
+    def makeReport(self, server_id, day, sessions):
         result = self.mongo.get_collection("sessions").find({"server_id": server_id, "start": {"$gte": day, "$lt": day + timedelta(days=1)}})
+        result = list(result)
+        for user,session in sessions.items():
+            start = session.session_start
+            end = datetime.now()+timedelta(hours=1)
+            
+            result.append({
+                "user":user,
+                "start":start,
+                "end":end,
+            })
+
 
         fig, ax = plt.subplots(figsize=(12, 6))
         ax.set_xlim(0, 24 * 60)

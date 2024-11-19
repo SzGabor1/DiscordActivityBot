@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import requests
 from datetime import datetime, timedelta
-import json
 from Session import Session
 from Reports import Reports
 import os 
@@ -12,19 +11,14 @@ intents = discord.Intents.default()
 intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
-rep = Reports()
 
-with open("activity.json","r",encoding = "utf8") as f:
-    data = json.load(f)
-
-
-user_activity = data
 bot = commands.Bot(command_prefix="!",intents=intents)
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
 sessions = {}
+rep = Reports()
 
 def update_user_time(member,time):
 
@@ -86,7 +80,7 @@ async def uptime(ctx,*args):
 async def gant(ctx,*args):
     
     date = datetime.now() + timedelta(hours=1)
-    report_file = rep.makeReport(ctx.guild.id, datetime(date.year, date.month, date.day))
+    report_file = rep.makeReport(ctx.guild.id, datetime(date.year, date.month, date.day), sessions)
     
     await ctx.send("Here's the Gantt chart for today's activity:", 
                    file=discord.File(report_file))
