@@ -50,6 +50,18 @@ def session_time_message(times_online_dict):
     
 
 
+@bot.command(help="Save and create sessions for each user in a channel.", usage="!save")
+async def save(ctx):
+    sessions.clear()
+    for member in ctx.guild.members:
+        if member.voice:
+            sessions[member.name] = Session(member)
+            if member.voice.self_mute:
+                sessions[member.name].handle_mic_state("muted")
+    
+    await ctx.send(f"Sessions have been saved for all users in voice channels.")
+
+
 @bot.command(help="Time of current session of users on the server.", usage="!uptime")
 async def uptime(ctx,*args):
     message : str = ""
