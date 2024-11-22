@@ -14,19 +14,56 @@ class Session:
     
     def __del__(self):
         session_data = {
-            "_id" : self.id,
+            "_id": self.id,
             "server_id": self.server_id,
-            "channel" : self.channel,
-            "user" : self.user,
-            "start" : self.session_start,
-            "end" : datetime.now()+timedelta(hours=1)
+            "channel": self.channel,
+            "user": self.user,
+            "start": self.session_start,
+            "end": datetime.now() + timedelta(hours=1)
         }
-        
+
         insert_result = self.mongo.get_collection("sessions").insert_one(session_data)
-        
+
         if insert_result.inserted_id:
             print(f"{self.user} left {self.channel}")
-            
+
+        self._update_mic_state_end()
+
+    def handle_mic_state(self, mic_state):
+        if mic_state == "muted":
+            mic_data = {
+                "id": self.id,
+                "server_id": self.server_id,
+                "user": self.user,
+                "mic_state": mic_state,
+                "start": datetime.now() + timedelta(hours=1),
+                "end": None
+            }
+            self.mongo.get_collection("mic_states").insert_one(mic_data)
+            print(f"{self.user} is now muted.")
+        elif mic_state == "unmuted":
+
+            update_result = self.mongo.get_collection("mic_states").update_one(
+                {"id": self.id,
+                 "mic_state": "muted",
+                 "end": None}, 
+                {"$set": {"end": datetime.now() + timedelta(hours=1)}}  
+            )
+
+            if update_result.modified_count > 0:
+                print(f"{self.user} is now unmuted.")
+            else:
+                print(f"Failed to update mic state for {self.user}, no active mute found.")
+
+    def _update_mic_state_end(self):
+        self.mongo.get_collection("mic_states").update_one(
+            {"id": self.id,
+             "mic_state": "muted",
+             "end": None},
+            {"$set": {"end": datetime.now() + timedelta(hours=1)}}
+        )
+        print(f"Mic state for {self.user} has been updated to 'unmuted' as they left.")
+    
             
     @staticmethod    
     def calculate_time_spent_in_session(sessions,server_id):
@@ -77,4 +114,3 @@ class Session:
             to_return[key] = times_online.get(key,0) + session_time.get(key,0)
 
         return to_return
-        

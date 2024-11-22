@@ -50,7 +50,7 @@ def session_time_message(times_online_dict):
     
 
 
-@bot.command(help="Time of current session of users on the server", usage="!uptime")
+@bot.command(help="Time of current session of users on the server.", usage="!uptime")
 async def uptime(ctx,*args):
     message : str = ""
 
@@ -65,15 +65,32 @@ async def uptime(ctx,*args):
 
 
 
-@bot.command(help="Send a gant diagram of the day's user activity", usage="!gant")
+@bot.command(help="Send a Gantt chart showing user activity for today or for a specific date (in yyyy.mm.dd format).", usage="!gant")
 async def gant(ctx,*args):
     
-    date = datetime.now() + timedelta(hours=1)
-    report_file = rep.makeReport(ctx.guild.id, datetime(date.year, date.month, date.day), sessions)
     
-    await ctx.send("Here's the Gantt chart for today's activity:", 
-                   file=discord.File(report_file))
+    if len(args) == 0:
+        date = datetime.now() + timedelta(hours=1)
+        report_file = rep.makeReport(ctx.guild.id, datetime(date.year, date.month, date.day), sessions)
+        
+        await ctx.send("Here's the Gantt chart for today's activity:", 
+                    file=discord.File(report_file))
+        
+    elif(args[0] == "mic"):
+        date = datetime.now() + timedelta(hours=1)
+        report_file = rep.generateGanttReportMic(ctx.guild.id, datetime(date.year, date.month, date.day), sessions)
+        
+        await ctx.send("Here's the Gantt chart for today's activity:", 
+                    file=discord.File(report_file))
     
+    else:
+        date_parts = args[0].split('.')
+        date = datetime(int(date_parts[0]), int(date_parts[1]), int(date_parts[2]))
+        report_file = rep.makeReport(ctx.guild.id, date, sessions)
+        
+        await ctx.send("Here's the Gantt chart for today's activity:", 
+                    file=discord.File(report_file))
+        
 
 
 @bot.command(help="Time of all users spent on this server.", args="!uptime\n!uptime <discord_username1> <discord_username2>")
@@ -96,17 +113,20 @@ async def alltime(ctx,*args):
     await ctx.send(message)
 
 @bot.event
-async def on_member_update(before, after):
-    #gombnyomas elotti allapot
-    before.voice.mute
-    pass
-
-
-@bot.event
 async def on_voice_state_update(member, before, after):
+    
+
+    if before.self_mute != after.self_mute:
+        mic_state = "muted" if after.self_mute else "unmuted"
+        sessions[member.name].handle_mic_state(mic_state)
+    
+    
     if before.channel is None and after.channel is not None:
         #joining channel
         sessions[member.name] = (Session(member))
+        
+        if before.self_mute:
+            sessions[member.name].handle_mic_state("muted")
         
     elif before.channel is not None and after.channel is None:
         #leaving channel
@@ -150,6 +170,9 @@ async def on_voice_state_update(member, before, after):
             send_webhook_message(message)
 
         sessions[member.name] = (Session(member))
+        
+        if before.self_mute:
+            sessions[member.name].handle_mic_state("muted")
 
 
 
