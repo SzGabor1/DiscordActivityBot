@@ -1,20 +1,21 @@
 from mongodb import MongoInit
 from bson.objectid import ObjectId
 from datetime import datetime,timedelta
+from MicStates import MicStates
 
 class Session:
     def __init__ (self,member):
-        self.id = str(ObjectId())
+        self.id : str  = str(ObjectId())
         self.mongo = MongoInit()
         self.server_id = member.guild.id
         self.channel = None
         self.user = member.name
         self.session_start = datetime.now()+timedelta(hours=1)
-        #asd
+        
 
     
     def __del__(self):
-        session_data = {
+        session_data : dict = {
             "_id": self.id,
             "server_id": self.server_id,
             "channel": self.channel,
@@ -30,8 +31,8 @@ class Session:
 
         self._update_mic_state_end()
 
-    def handle_mic_state(self, mic_state):
-        if mic_state == "muted":
+    def handle_mic_state(self, mic_state : MicStates):
+        if mic_state == MicStates.MUTED:
             mic_data = {
                 "_id": self.id,
                 "user": self.user,
@@ -41,12 +42,12 @@ class Session:
             }
             self.mongo.get_collection("mic_states").insert_one(mic_data)
             print(f"{self.user} is now muted.")
-        elif mic_state == "unmuted":
+        elif mic_state == MicStates.UNMUTED:
 
             update_result = self.mongo.get_collection("mic_states").update_one(
                 {
                     "id": self.id,
-                    "mic_state": "muted",
+                    "mic_state": MicStates.MUTED.value,
                     "end": None
                 }, 
                 {
@@ -65,7 +66,7 @@ class Session:
     def _update_mic_state_end(self):
         self.mongo.get_collection("mic_states").update_one(
             {"id": self.id,
-             "mic_state": "muted",
+             "mic_state": MicStates.MUTED.value,
              "end": None},
             {"$set": {"end": datetime.now() + timedelta(hours=1)}}
         )
