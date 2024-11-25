@@ -8,6 +8,7 @@ class Reports:
     
     
     def makeReport(self, server_id, day, sessions):
+        
         result = self.mongo.get_collection("sessions").find({"server_id": server_id, "start": {"$gte": day, "$lt": day + timedelta(days=1)}})
         result = list(result)
         for user,session in sessions.items():
@@ -57,6 +58,7 @@ class Reports:
 
 
     def generateGanttReportMic(self, server_id, day, sessions):
+        day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         result = self.mongo.get_collection("sessions").find({
             "server_id": server_id, 
             "start": {"$gte": day, "$lt": day + timedelta(days=1)}
@@ -132,3 +134,8 @@ class Reports:
         plt.savefig(filename)
 
         return filename
+    
+# if __name__ == '__main__':
+#         rep = Reports()
+#         sessions= {}
+#         rep.generateGanttReportMic('658774290203934751', datetime.now().date(), sessions)

@@ -32,8 +32,7 @@ class Session:
     def handle_mic_state(self, mic_state):
         if mic_state == "muted":
             mic_data = {
-                "id": self.id,
-                "server_id": self.server_id,
+                "_id": self.id,
                 "user": self.user,
                 "mic_state": mic_state,
                 "start": datetime.now() + timedelta(hours=1),
@@ -44,10 +43,17 @@ class Session:
         elif mic_state == "unmuted":
 
             update_result = self.mongo.get_collection("mic_states").update_one(
-                {"id": self.id,
-                 "mic_state": "muted",
-                 "end": None}, 
-                {"$set": {"end": datetime.now() + timedelta(hours=1)}}  
+                {
+                    "id": self.id,
+                    "mic_state": "muted",
+                    "end": None
+                }, 
+                {
+                    "$set":
+                        {
+                            "end": datetime.now() + timedelta(hours=1)
+                        }
+                }  
             )
 
             if update_result.modified_count > 0:
