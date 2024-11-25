@@ -10,6 +10,7 @@ class Session:
         self.channel = None
         self.user = member.name
         self.session_start = datetime.now()+timedelta(hours=1)
+        #asd
 
     
     def __del__(self):
