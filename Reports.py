@@ -6,26 +6,32 @@ class Reports:
     def __init__(self):
         self.mongo = MongoInit()
     
-    
-    def makeReport(self, server_id, day, sessions):
-        
-        result = self.mongo.get_collection("sessions").find({"server_id": server_id, "start": {"$gte": day, "$lt": day + timedelta(days=1)}})
-        result = list(result)
-        for user,session in sessions.items():
-            start = session.session_start
-            end = datetime.now()+timedelta(hours=1)
-            
-            result.append({
-                "user":user,
-                "start":start,
-                "end":end,
-            })
 
+    def makeReport(self, server_id, day, sessions):
+        next_day = day + timedelta(days=1)
+        result = self.mongo.get_collection("sessions").find({
+            "server_id": server_id,
+            "$or": [
+                {"start": {"$lt": next_day, "$gte": day}},
+                {"end": {"$gt": day, "$lt": next_day}},
+                {"start": {"$lte": day}, "end": {"$gte": next_day}}
+            ]
+        })
+        result = list(result)
+        
+        for user, session in sessions.items():
+            start = session.session_start
+            end = datetime.now() + timedelta(hours=1)
+            result.append({
+                "user": user,
+                "start": start,
+                "end": end,
+            })
 
         fig, ax = plt.subplots(figsize=(12, 6))
         ax.set_xlim(0, 24 * 60)
         ax.set_xlabel('Hours of the Day')
-        y_labels = []  
+        y_labels = []
         y_positions = []
         ax.set_xticks([i * 60 for i in range(25)])
         ax.set_xticklabels([str(i) for i in range(25)])
@@ -37,23 +43,31 @@ class Reports:
             name = data.get("user")
             if name not in heights:
                 heights[name] = len(heights) * 10
-                colors[name] = "#{:06x}".format(random.randint(0, 0xffffff))
+                colors[name] = "#{:06x}".format(random.randint(0, 0xFFFFFF))
                 y_labels.append(name)
                 y_positions.append(heights[name] + 5)
-            session_start = data.get("start") - day
-            session_end = data.get("end") - day
 
-            start_bar = session_start.total_seconds() / 60
-            bar_length = session_end.total_seconds() / 60 - start_bar
+            session_start = max(data.get("start"), day)
+            session_end = min(data.get("end"), next_day)
+
+            if data.get("start") < day:
+                session_start = day
+            if data.get("end") > next_day:
+                session_end = next_day
+
+            start_bar = (session_start - day).total_seconds() / 60
+            bar_length = (session_end - session_start).total_seconds() / 60
 
             ax.broken_barh([(start_bar, bar_length)], (heights[name], 10), facecolors=(colors[name]))
-            ax.set_yticks(y_positions)
-            ax.set_yticklabels(y_labels)
-        filename = "./reports/gant.png"
 
+        ax.set_yticks(y_positions)
+        ax.set_yticklabels(y_labels)
+
+        filename = "./reports/gantt.png"
         plt.savefig(filename)
-
         return filename
+
+
 
 
 
